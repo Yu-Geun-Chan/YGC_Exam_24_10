@@ -5,10 +5,8 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>${pageTitle }</title>
-    <link rel="stylesheet" href="/resource/common.css"/>
-    <link rel="stylesheet" href="/resource/gameSchedule.css"/>
-    <script src="/resource/common.js" defer="defer"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>날씨 정보 앱</title>
     <!-- 제이쿼리, UI 추가 -->
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -18,189 +16,165 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 
     <style>
+        /* 전체 배경 스타일 */
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+            font-family: 'Arial', sans-serif; /* 폰트 스타일 설정 */
+            background-color: #f0f8ff; /* 부드러운 배경색 */
+            color: #333; /* 텍스트 색상 */
             margin: 0;
-            padding: 20px;
-        }
-
-        .main-content {
-            max-width: 800px;
-            margin: auto;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-        }
-
-        #weather-container {
+            padding: 0;
             display: flex;
-            flex-wrap: wrap;
-            gap: 20px; /* 각 날씨 정보 사이의 간격 */
+            justify-content: center; /* 수평 중앙 정렬 */
+            align-items: center; /* 수직 중앙 정렬 */
+            height: 100vh; /* 전체 화면 높이 */
         }
 
-        .stadium-weather {
-            flex: 1 1 calc(50% - 20px); /* 두 개의 열로 나누기 */
-            background: #e3f2fd; /* 연한 파란색 배경 */
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s;
+        /* 컨테이너 스타일 */
+        .container {
+            text-align: center; /* 텍스트 중앙 정렬 */
+            background-color: #fff; /* 흰색 배경 */
+            border-radius: 10px; /* 모서리 둥글게 */
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); /* 그림자 효과 */
+            padding: 20px; /* 내부 여백 */
+            width: 300px; /* 너비 설정 */
         }
 
-        .stadium-weather:hover {
-            transform: scale(1.02); /* 마우스 오버 시 확대 효과 */
+        /* 입력 필드 스타일 */
+        input[type="text"] {
+            width: 80%; /* 입력 필드 너비 */
+            padding: 10px; /* 내부 여백 */
+            margin: 10px 0; /* 상하 여백 */
+            border: 1px solid #ccc; /* 테두리 색상 */
+            border-radius: 5px; /* 테두리 둥글게 */
         }
 
-        h3 {
-            margin: 0 0 10px;
-            color: #1e88e5; /* 제목 색상 */
+        /* 버튼 스타일 */
+        button {
+            background-color: #007bff; /* 버튼 배경색 */
+            color: #fff; /* 버튼 텍스트 색상 */
+            border: none; /* 테두리 제거 */
+            padding: 10px 20px; /* 버튼 내부 여백 */
+            border-radius: 5px; /* 버튼 모서리 둥글게 */
+            cursor: pointer; /* 커서 포인터 */
+            font-size: 16px; /* 글자 크기 */
         }
 
-        p {
-            margin: 5px 0;
-            color: #555; /* 본문 색상 */
+        /* 버튼 호버 효과 */
+        button:hover {
+            background-color: #0056b3; /* 호버 시 배경색 변경 */
         }
 
-        #search-container {
-            margin-bottom: 20px;
+        /* 날씨 정보 스타일 */
+        .weather-info {
+            margin-top: 20px; /* 상단 여백 */
+            text-align: left; /* 왼쪽 정렬 */
         }
 
-        #search-input {
-            padding: 10px;
-            width: 100%;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-        }
-
-        #search-button {
-            padding: 10px;
-            background-color: #1e88e5;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        #search-button:hover {
-            background-color: #0d7aef;
-        }
     </style>
 </head>
 
 <body>
 
-<div class="main-content">
-    <div id="search-container">
-        <input type="text" id="search-input" placeholder="도시 이름을 입력하세요..." />
-        <button id="search-button">검색</button>
-    </div>
-    <div id="weather-container"></div>
+<div class="container"> <!-- 날씨 앱의 주요 컨테이너 -->
+    <h1>날씨 정보 조회</h1> <!-- 앱 제목 -->
+    <input type="text" id="cityInput" placeholder="도시 이름을 입력하세요"/> <!-- 도시 이름 입력 필드 -->
+    <button id="getWeatherBtn">조회</button> <!-- 날씨 조회 버튼 -->
+    <div id="weatherInfo" class="weather-info"></div> <!-- 날씨 정보 표시 영역 -->
 </div>
 
 <script>
-    const apiKey = 'Your_API_Key';
+    // OpenWeather API 설정: 발급받은 API 키를 여기에 입력
+    const apiKey = 'YOUR_API_KEY';
 
-    $(document).ready(function() {
-        // 초기화: 지정된 경기장의 날씨를 가져옵니다.
-        fetchWeatherForStadiums();
-
-        // 검색 버튼 클릭 시 이벤트 리스너 추가
-        $('#search-button').on('click', function() {
-            const city = $('#search-input').val();
-            fetchWeatherForCity(city);
+    $(document).ready(function () {
+        // 날씨 조회 버튼 클릭 이벤트 핸들러
+        $('#getWeatherBtn').click(function () {
+            getWeatherByCityName();
         });
+
+        // 입력 필드에서 Enter 키가 눌렸을 때 날씨 조회
+        $('#cityInput').keyup(function (event) {
+            if (event.key === "Enter") { // Enter 키가 눌리면
+                getWeatherByCityName();
+            }
+        });
+
+        // 일정 간격으로 날씨 정보 갱신 (10분마다 자동 갱신)
+        setInterval(getWeatherByCityName, 600000);
     });
 
-    function fetchWeatherForStadiums() {
-        const stadiums = [
-            { name: '잠실', lat: 37.5122579, lon: 127.0719011 },
-            { name: '수원', lat: 37.2997553, lon: 127.0096685 },
-            { name: '고척', lat: 37.498, lon: 126.867 },
-            { name: '인천', lat: 37.4370423, lon: 126.6932617 },
-            { name: '대전', lat: 36.3170789, lon: 127.4291345 },
-            { name: '사직', lat: 35.1940316, lon: 129.0615183 },
-            { name: '창원', lat: 35.2225335, lon: 128.5823895 },
-            { name: '대구', lat: 35.8411705, lon: 128.6815273 },
-            { name: '광주', lat: 35.1681242, lon: 126.8891056 },
-        ];
+    // 도시 이름을 기준으로 날씨를 조회하는 함수
+    function getWeatherByCityName() {
+        // 사용자 입력으로부터 도시 이름 가져오기
+        const city = $('#cityInput').val();
 
-        let weatherResults = new Array(stadiums.length); // 날씨 정보를 저장할 배열
+        // 입력된 도시 이름이 없는 경우 경고 표시 후 함수 종료
+        if (!city) {
+            alert("도시 이름을 입력하세요.");
+            return;
+        }
 
-        $.each(stadiums, function(index, stadium) {
-            $.ajax({
-                url: `https://api.openweathermap.org/data/2.5/weather`,
-                type: 'GET',
-                data: {
-                    lat: stadium.lat,
-                    lon: stadium.lon,
-                    appid: apiKey,
-                    units: 'metric',
-                    lang: 'kr'
-                },
-                success: function(data) {
-                    const weatherInfo = {
-                        name: stadium.name,
-                        temp: data.main.temp,
-                        description: data.weather.length > 0 ? data.weather[0].description : '정보 없음',
-                        humidity: data.main.humidity,
-                        windSpeed: data.wind.speed
-                    };
-                    weatherResults[index] = weatherInfo;
-
-                    if (weatherResults.every(result => result !== undefined)) {
-                        displayWeather(weatherResults);
-                    }
-                },
-                error: function() {
-                    console.log('날씨 데이터를 불러오는 중 오류가 발생했습니다.');
-                }
-            });
-        });
-    }
-
-    function fetchWeatherForCity(city) {
+        // Geocoding API를 통해 도시의 위도와 경도 찾기 (한글 도시명 검색 지원)
         $.ajax({
-            url: `https://api.openweathermap.org/data/2.5/weather`,
+            url: 'https://api.openweathermap.org/geo/1.0/direct?q=' + city + '&limit=1&appid=' + apiKey,
             type: 'GET',
-            data: {
-                q: city, // 도시 이름
-                appid: apiKey,
-                units: 'metric',
-                lang: 'kr'
+            dataType: 'json',
+            success: function (data) {
+                if (data.length > 0) {
+                    const lat = data[0].lat;
+                    const lon = data[0].lon;
+                    // 여기에서 도시 이름을 사용자가 입력한 city로 설정 -> 한글로 보여주기 위해
+                    getWeatherByCoordinates(lat, lon, city);
+                } else {
+                    alert("해당 도시를 찾을 수 없습니다.");
+                }
             },
-            success: function(data) {
-                const weatherInfo = {
-                    name: data.name,
-                    temp: data.main.temp,
-                    description: data.weather.length > 0 ? data.weather[0].description : '정보 없음',
-                    humidity: data.main.humidity,
-                    windSpeed: data.wind.speed
-                };
-                displayWeather([weatherInfo]); // 단일 결과로 표시
-            },
-            error: function() {
-                alert('해당 도시의 날씨 정보를 찾을 수 없습니다.');
+            error: function (error) {
+                console.error("Error fetching coordinates:", error);
+                alert("도시 정보를 가져오는 데 실패했습니다.");
             }
         });
     }
 
-    function displayWeather(results) {
-        $('#weather-container').empty(); // 기존 내용 비우기
-        results.forEach(result => {
-            const weatherHtml = `
-                <div class="stadium-weather">
-                    <h3>` + result.name + `</h3>
-                    <p>온도: ` + result.temp + ` °C</p>
-                    <p>날씨: ` + result.description + `</p>
-                    <p>습도: ` + result.humidity + `%</p>
-                    <p>풍속: ` + result.windSpeed + ` m/s</p>
-                </div>
-            `;
-            $('#weather-container').append(weatherHtml); // 결과를 DOM에 추가
+    // 위도와 경도를 기준으로 날씨를 조회하는 함수
+    function getWeatherByCoordinates(lat, lon, cityName) {
+        $.ajax({
+            url: 'https://api.openweathermap.org/data/2.5/weather?lat=' + lat + '&lon=' + lon + '&appid=' + apiKey + '&units=metric&lang=kr',
+            type: 'GET',
+            dataType: 'json',
+            success: function (data) {
+                if (data.cod === 200) {
+                    displayWeather(data, cityName);
+                } else {
+                    alert("날씨 정보를 찾을 수 없습니다.");
+                }
+            },
+            error: function (error) {
+                console.error("Error fetching weather data:", error);
+                alert("날씨 데이터를 가져오는 데 실패했습니다.");
+            }
         });
     }
+
+    // 현재 시간을 반환하는 함수
+    function getCurrentTime() {
+        const now = new Date(); // 현재 시간 객체 생성
+        return now.toLocaleString('ko-KR'); // 한국어 형식으로 날짜와 시간 반환
+    }
+
+    // 날씨 정보를 화면에 표시하는 함수
+    function displayWeather(data, cityName) {
+        const currentTime = getCurrentTime(); // 현재 시간 가져오기
+        $('#weatherInfo').html(
+            '<h2>' + cityName + ' 날씨</h2>' +
+            '<p><strong>현재 시간:</strong> ' + currentTime + '</p>' + // 현재 시간 표시
+            '<p><strong>온도:</strong> ' + data.main.temp + '°C</p>' +
+            '<p><strong>습도:</strong> ' + data.main.humidity + '%</p>' +
+            '<p><strong>풍속:</strong> ' + data.wind.speed + ' m/s</p>' +
+            '<p><strong>상태:</strong> ' + data.weather[0].description + '</p>'
+        );
+    }
+
 </script>
 
 </body>
